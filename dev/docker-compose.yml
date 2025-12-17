@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database - Development
+  postgres:
+    image: postgres:16-alpine
+    container_name: exercises-postgres-dev
+    environment:
+      POSTGRES_DB: exercises_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - exercises-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Exercise Backend Application - Development
+  app:
+    image: ${DOCKER_USERNAME:-yourusername}/exercises-backend:${IMAGE_VERSION:-latest}
+    container_name: exercises-backend-dev
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/exercises_dev
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - exercises-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/exercise-logging/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  exercises-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
