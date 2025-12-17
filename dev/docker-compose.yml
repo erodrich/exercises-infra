@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
 
   # Exercise Backend Application - Development
-  app:
+  backend:
     image: ${DOCKER_USERNAME:-yourusername}/exercises-backend:${IMAGE_VERSION:-latest}
     container_name: exercises-backend-dev
     environment:
@@ -46,6 +46,27 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    restart: unless-stopped
+
+  # Exercise Frontend Application - Development
+  frontend:
+    image: ${DOCKER_USERNAME:-yourusername}/exercises-frontend:${FRONTEND_VERSION:-latest}
+    container_name: exercises-frontend-dev
+    environment:
+      VITE_API_URL: http://localhost:8080/exercise-logging
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - exercises-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
 networks:

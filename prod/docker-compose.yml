@@ -27,7 +27,7 @@ services:
     restart: always
 
   # Exercise Backend Application - Production
-  app:
+  backend:
     image: ${DOCKER_USERNAME}/exercises-backend:${IMAGE_VERSION:-latest}
     container_name: exercises-backend-prod
     environment:
@@ -55,6 +55,33 @@ services:
           memory: 1G
         reservations:
           memory: 512M
+
+  # Exercise Frontend Application - Production
+  frontend:
+    image: ${DOCKER_USERNAME}/exercises-frontend:${FRONTEND_VERSION:-latest}
+    container_name: exercises-frontend-prod
+    environment:
+      VITE_API_URL: http://localhost:8080/exercise-logging
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - exercises-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
 networks:
   exercises-network:

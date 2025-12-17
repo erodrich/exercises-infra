@@ -1,16 +1,16 @@
-# Exercise Backend Infrastructure
+# Exercise Application Infrastructure
 
-Docker Compose configurations for deploying the Exercise Backend application across different environments.
+Docker Compose configurations for deploying the full-stack Exercise application (frontend + backend + database) across different environments.
 
 ## Structure
 
 ```
 exercises-infra/
 ├── dev/
-│   ├── docker-compose.yml    # Development environment
+│   ├── docker-compose.yml    # Development environment (3 services)
 │   └── .env.example           # Development config template
 ├── prod/
-│   ├── docker-compose.yml    # Production environment
+│   ├── docker-compose.yml    # Production environment (3 services)
 │   └── .env.example           # Production config template
 ├── database/
 │   ├── 01-schema.sql          # Database schema
@@ -24,7 +24,7 @@ exercises-infra/
 
 - Docker 20.10+
 - Docker Compose 2.0+
-- Access to Docker Hub (where the backend image is hosted)
+- Access to Docker Hub (where the images are hosted)
 
 ## Database Initialization
 
@@ -82,6 +82,7 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
    ```env
    DOCKER_USERNAME=your-dockerhub-username
    IMAGE_VERSION=latest
+   FRONTEND_VERSION=latest
    DB_PASSWORD=postgres
    ```
 
@@ -95,13 +96,16 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 5. **Check status**
    ```bash
    docker-compose ps
-   docker-compose logs -f app
+   docker-compose logs -f backend
+   docker-compose logs -f frontend
    ```
 
 6. **Access application**
+   - Frontend: http://localhost:3000
    - API: http://localhost:8080/exercise-logging
    - Swagger: http://localhost:8080/exercise-logging/swagger-ui/index.html
-   - Health: http://localhost:8080/exercise-logging/actuator/health
+   - Backend Health: http://localhost:8080/exercise-logging/actuator/health
+   - Frontend Health: http://localhost:3000/health
 
 ### Production Environment
 
@@ -124,6 +128,7 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
    ```env
    DOCKER_USERNAME=your-dockerhub-username
    IMAGE_VERSION=1.0.0  # Use specific version tag
+   FRONTEND_VERSION=1.0.0  # Use specific version tag
    DB_USERNAME=postgres
    DB_PASSWORD=YourSecurePassword123!  # CHANGE THIS!
    ```
@@ -138,8 +143,10 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 5. **Verify deployment**
    ```bash
    docker-compose ps
-   docker-compose logs -f app
+   docker-compose logs -f backend
+   docker-compose logs -f frontend
    curl http://localhost:8080/exercise-logging/actuator/health
+   curl http://localhost:3000/health
    ```
 
 ## Environment Configurations
@@ -150,7 +157,8 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 
 **Configuration:**
 - PostgreSQL on port 5432
-- Application on port 8080
+- Backend on port 8080
+- Frontend on port 3000
 - Profile: `dev`
 - Database: `exercises_dev`
 - Auto-initializes with sample data
@@ -159,7 +167,8 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 
 **Docker Compose Services:**
 - `postgres` - PostgreSQL 16 Alpine
-- `app` - Exercise Backend (from Docker Hub)
+- `backend` - Spring Boot API (from Docker Hub)
+- `frontend` - React SPA with Nginx (from Docker Hub)
 
 **Default Credentials:**
 - DB User: `postgres`
@@ -171,17 +180,21 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 
 **Configuration:**
 - PostgreSQL on port 5432
-- Application on port 8080
+- Backend on port 8080
+- Frontend on port 3000
 - Profile: `prod`
 - Database: `exercises_prod`
 - No auto-initialization
 - Schema validation only
 - Production logging
-- Memory limits: 1GB max, 512MB reserved
+- Memory limits:
+  - Backend: 1GB max, 512MB reserved
+  - Frontend: 256MB max, 128MB reserved
 
 **Docker Compose Services:**
 - `postgres` - PostgreSQL 16 Alpine (always restart)
-- `app` - Exercise Backend (from Docker Hub)
+- `backend` - Spring Boot API (from Docker Hub)
+- `frontend` - React SPA with Nginx (from Docker Hub)
 
 **Security Requirements:**
 - ⚠️ **MUST** set secure DB_PASSWORD
@@ -210,11 +223,12 @@ docker-compose up -d --pull always
 docker-compose logs -f
 
 # Specific service
-docker-compose logs -f app
+docker-compose logs -f backend
+docker-compose logs -f frontend
 docker-compose logs -f postgres
 
 # Last 100 lines
-docker-compose logs --tail=100 app
+docker-compose logs --tail=100 backend
 ```
 
 ### Managing Services
@@ -224,7 +238,8 @@ docker-compose logs --tail=100 app
 docker-compose ps
 
 # Restart service
-docker-compose restart app
+docker-compose restart backend
+docker-compose restart frontend
 
 # Stop services
 docker-compose stop
@@ -239,32 +254,42 @@ docker-compose down -v
 ### Executing Commands
 
 ```bash
-# Shell into application container
-docker-compose exec app sh
+# Shell into backend container
+docker-compose exec backend sh
+
+# Shell into frontend container
+docker-compose exec frontend sh
 
 # Database shell
 docker-compose exec postgres psql -U postgres -d exercises_dev
 
 # Check Java version
-docker-compose exec app java -version
+docker-compose exec backend java -version
+
+# Check Nginx version
+docker-compose exec frontend nginx -v
 ```
 
 ### Updating Application
 
 ```bash
-# Pull latest image
-docker-compose pull app
+# Pull latest images
+docker-compose pull
 
-# Restart with new image
-docker-compose up -d app
+# Restart with new images
+docker-compose up -d
+
+# Update specific service
+docker-compose pull backend
+docker-compose up -d backend
 
 # Or in one command
-docker-compose up -d --pull always app
+docker-compose up -d --pull always
 ```
 
 ## Health Checks
 
-### Application Health
+### Backend Health
 
 ```bash
 curl http://localhost:8080/exercise-logging/actuator/health
@@ -274,6 +299,20 @@ Expected response:
 ```json
 {
   "status": "UP"
+}
+```
+
+### Frontend Health
+
+```bash
+curl http://localhost:3000/health
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "service": "exercises-frontend"
 }
 ```
 
@@ -299,6 +338,7 @@ docker-compose exec postgres pg_isready -U postgres
 |----------|---------|-------------|
 | `DOCKER_USERNAME` | - | Docker Hub username (required) |
 | `IMAGE_VERSION` | `latest` | Backend image version |
+| `FRONTEND_VERSION` | `latest` | Frontend image version |
 | `DB_PASSWORD` | `postgres` | Database password |
 
 ### Production
@@ -307,6 +347,7 @@ docker-compose exec postgres pg_isready -U postgres
 |----------|---------|-------------|
 | `DOCKER_USERNAME` | - | Docker Hub username (required) |
 | `IMAGE_VERSION` | `latest` | Backend image version (use specific tag) |
+| `FRONTEND_VERSION` | `latest` | Frontend image version (use specific tag) |
 | `DB_USERNAME` | `postgres` | Database username |
 | `DB_PASSWORD` | - | Database password (required, no default) |
 
@@ -341,7 +382,8 @@ docker-compose exec -T postgres psql -U postgres exercises_dev < backup.sql
 Both environments create a bridge network named `exercises-network`.
 
 **Services communicate via service names:**
-- Application connects to database using hostname: `postgres`
+- Backend connects to database using hostname: `postgres`
+- Frontend connects to backend using hostname: `backend` (internal) or `localhost:8080` (external)
 - JDBC URL: `jdbc:postgresql://postgres:5432/exercises_dev`
 
 **List networks:**
@@ -360,13 +402,15 @@ docker network inspect dev_exercises-network
 
 **Check logs:**
 ```bash
-docker-compose logs app
+docker-compose logs backend
+docker-compose logs frontend
 ```
 
 **Common issues:**
 - Image not found: Set `DOCKER_USERNAME` in `.env`
 - Database not ready: Wait for health check to pass
-- Port conflict: Another service using port 8080 or 5432
+- Port conflict: Another service using port 3000, 8080, or 5432
+- CORS errors: Check backend CORS configuration
 
 ### Database Connection Error
 
@@ -377,7 +421,8 @@ docker-compose ps postgres
 
 **Check network connectivity:**
 ```bash
-docker-compose exec app ping postgres
+docker-compose exec backend ping postgres
+docker-compose exec frontend ping backend
 ```
 
 **Verify credentials:**
@@ -393,21 +438,28 @@ cat .env
 docker login
 ```
 
-**Manually pull image:**
+**Manually pull images:**
 ```bash
 docker pull ${DOCKER_USERNAME}/exercises-backend:latest
+docker pull ${DOCKER_USERNAME}/exercises-frontend:latest
 ```
 
 ### Application Unhealthy
 
-**Check health endpoint:**
+**Check backend health endpoint:**
 ```bash
-docker-compose exec app wget -qO- http://localhost:8080/exercise-logging/actuator/health
+docker-compose exec backend wget -qO- http://localhost:8080/exercise-logging/actuator/health
+```
+
+**Check frontend health endpoint:**
+```bash
+docker-compose exec frontend wget -qO- http://localhost/health
 ```
 
 **Check application logs:**
 ```bash
-docker-compose logs --tail=100 app
+docker-compose logs --tail=100 backend
+docker-compose logs --tail=100 frontend
 ```
 
 ### Reset Everything
@@ -431,17 +483,19 @@ docker-compose up -d
 
 ### Development Environment
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| postgres | 5432 | PostgreSQL database |
-| app | 8080 | Spring Boot application |
+| Service | Container Port | Host Port | Purpose |
+|---------|----------------|-----------|---------|
+| frontend | 80 | 3000 | React SPA (Nginx) |
+| backend | 8080 | 8080 | Spring Boot REST API |
+| postgres | 5432 | 5432 | PostgreSQL database |
 
 ### Production Environment
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| postgres | 5432 | PostgreSQL database |
-| app | 8080 | Spring Boot application |
+| Service | Container Port | Host Port | Purpose |
+|---------|----------------|-----------|---------|
+| frontend | 80 | 3000 | React SPA (Nginx) |
+| backend | 8080 | 8080 | Spring Boot REST API |
+| postgres | 5432 | 5432 | PostgreSQL database |
 
 ## Security Best Practices
 
@@ -472,7 +526,7 @@ docker-compose up -d
 docker stats
 
 # Specific containers
-docker stats exercises-backend-dev exercises-postgres-dev
+docker stats exercises-frontend-dev exercises-backend-dev exercises-postgres-dev
 ```
 
 ### Check Disk Usage
@@ -490,6 +544,7 @@ docker system df -v
 - [ ] Copy `.env.example` to `.env`
 - [ ] Set `DOCKER_USERNAME` to your Docker Hub username
 - [ ] Set `IMAGE_VERSION` to specific version (e.g., `1.0.0`)
+- [ ] Set `FRONTEND_VERSION` to specific version (e.g., `1.0.0`)
 - [ ] Set strong `DB_PASSWORD` (20+ characters)
 - [ ] Review security settings
 - [ ] Test database connection
@@ -504,20 +559,22 @@ docker system df -v
 
 ### Updating the Application
 
-1. Pull new image version:
+1. Pull new image versions:
    ```bash
-   docker-compose pull app
+   docker-compose pull
    ```
 
-2. Restart application:
+2. Restart applications:
    ```bash
-   docker-compose up -d app
+   docker-compose up -d
    ```
 
 3. Verify deployment:
    ```bash
-   docker-compose logs -f app
+   docker-compose logs -f backend
+   docker-compose logs -f frontend
    curl http://localhost:8080/exercise-logging/actuator/health
+   curl http://localhost:3000/health
    ```
 
 ### Database Maintenance
@@ -539,14 +596,17 @@ docker-compose exec postgres psql -U postgres -d exercises_prod -c "SELECT count
 
 ## Getting Help
 
-- Check application logs: `docker-compose logs app`
+- Check backend logs: `docker-compose logs backend`
+- Check frontend logs: `docker-compose logs frontend`
 - Check database logs: `docker-compose logs postgres`
 - Verify configuration: `docker-compose config`
 - List all containers: `docker ps -a`
-- Backend repository: Check main README.md in exercises-backend
+- Backend docs: Check exercises-backend/README.md
+- Frontend docs: Check exercises-frontend/README.md
 
 ## Additional Resources
 
 - Docker Compose Documentation: https://docs.docker.com/compose/
 - PostgreSQL Docker Image: https://hub.docker.com/_/postgres
 - Spring Boot Actuator: https://docs.spring.io/spring-boot/actuator/
+- Nginx Docker Image: https://hub.docker.com/_/nginx
