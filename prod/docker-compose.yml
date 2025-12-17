@@ -13,6 +13,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ../database/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      # Note: Seed data is mounted but only runs on fresh database
+      # For production, consider whether you want to pre-load exercises
+      - ../database/02-seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql
     networks:
       - exercises-network
     healthcheck:

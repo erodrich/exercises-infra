@@ -12,6 +12,11 @@ exercises-infra/
 ├── prod/
 │   ├── docker-compose.yml    # Production environment
 │   └── .env.example           # Production config template
+├── database/
+│   ├── 01-schema.sql          # Database schema
+│   ├── 02-seed-data.sql       # Initial data (34 exercises)
+│   ├── init-db.sh             # Manual init script
+│   └── README.md              # Database documentation
 └── README.md                  # This file
 ```
 
@@ -20,6 +25,39 @@ exercises-infra/
 - Docker 20.10+
 - Docker Compose 2.0+
 - Access to Docker Hub (where the backend image is hosted)
+
+## Database Initialization
+
+### Automatic (Recommended)
+
+When starting with docker-compose, the database is **automatically initialized** on first startup:
+
+1. PostgreSQL container starts
+2. SQL scripts from `database/` folder are executed:
+   - `01-schema.sql` - Creates all tables, indexes, sequences
+   - `02-seed-data.sql` - Loads 34 pre-defined exercises
+3. Application starts with schema validation (`ddl-auto=validate` in prod)
+
+**Important:** Scripts only run when creating a **new database**. If the volume already exists with data, scripts are skipped.
+
+### Manual Initialization
+
+For manual database setup, use the initialization script:
+
+```bash
+cd database
+./init-db.sh
+```
+
+Or execute SQL files directly:
+
+```bash
+export PGPASSWORD=postgres
+psql -h localhost -U postgres -d exercises_dev -f database/01-schema.sql
+psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
+```
+
+📖 **For detailed database documentation, see [database/README.md](database/README.md)**
 
 ## Quick Start
 
@@ -47,10 +85,12 @@ exercises-infra/
    DB_PASSWORD=postgres
    ```
 
-4. **Start services**
+4. **Start services** (database auto-initializes on first run)
    ```bash
    docker-compose up -d
    ```
+
+   **Note:** On first startup, wait ~10 seconds for database initialization to complete.
 
 5. **Check status**
    ```bash
@@ -88,10 +128,12 @@ exercises-infra/
    DB_PASSWORD=YourSecurePassword123!  # CHANGE THIS!
    ```
 
-4. **Start services**
+4. **Start services** (database auto-initializes on first run)
    ```bash
    docker-compose up -d
    ```
+
+   **Note:** On first startup, database schema is automatically created.
 
 5. **Verify deployment**
    ```bash
