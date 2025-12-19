@@ -8,21 +8,31 @@ SQL scripts for initializing the Exercise Backend PostgreSQL database.
 Creates all database tables, sequences, indexes, and constraints.
 
 **Tables created:**
-- `users` - User accounts
-- `exercise_entity` - Available exercises
-- `exercise_log_entity` - Workout sessions
-- `exercise_set_entity` - Individual sets
+- `users` - User accounts with role-based access (USER, ADMIN)
+- `muscle_groups` - Muscle group categories
+- `exercises` - Available exercises (references muscle_groups)
+- `exercise_logs` - Workout sessions
+- `exercise_sets` - Individual sets
 - `exercise_log_sets` - Join table for logs and sets
 
 **Sequences:**
 - `users_seq`
-- `exercise_entity_seq`
-- `exercise_log_entity_seq`
+- `muscle_groups_seq`
+- `exercises_seq`
+- `exercise_logs_seq`
 
 ### `02-seed-data.sql`
-Pre-populates the database with 34 common exercises across 6 muscle groups.
+Pre-populates the database with 6 muscle groups and 34 common exercises.
 
 **Muscle Groups:**
+1. Chest - Pectoral muscles
+2. Back - Latissimus dorsi, trapezius, rhomboids
+3. Shoulders - Deltoid muscles
+4. Legs - Quadriceps, hamstrings, glutes, calves
+5. Biceps - Biceps brachii
+6. Triceps - Triceps brachii
+
+**Exercises per Muscle Group:**
 - Chest (6 exercises)
 - Back (6 exercises)
 - Shoulders (6 exercises)
@@ -150,7 +160,9 @@ If the database volume already exists:
 - Uses sequences for ID generation
 - Includes indexes for common queries
 - Foreign key constraints enforced
-- Check constraints on enum values
+- Check constraints on enum values (muscle_group, role)
+- Role-based access control (USER, ADMIN)
+- Password stored as encrypted hash (BCrypt)
 
 ## Migration Strategy
 
@@ -177,46 +189,57 @@ If the database volume already exists:
 ## Database Schema Diagram
 
 ```
-┌──────────────┐
-│    users     │
-│──────────────│
-│ id (PK)      │───┐
-│ username     │   │
-│ email        │   │
-│ password     │   │
-│ created_at   │   │
-└──────────────┘   │
-                   │
-                   │ (FK)
-                   │
-┌──────────────────┴────────┐
-│   exercise_log_entity     │
-│───────────────────────────│
-│ exercise_log_id (PK)      │───┐
-│ user_id (FK)              │   │
-│ exercise_id (FK)          │   │
-│ date                      │   │
-│ has_failed                │   │
-└───────────┬───────────────┘   │
-            │                   │
-            │ (FK)              │ (FK - M2M)
-            │                   │
-┌───────────▼───────────┐   ┌───▼───────────────────┐
-│  exercise_entity      │   │ exercise_log_sets     │
-│───────────────────────│   │───────────────────────│
-│ id (PK)               │   │ exercise_log_id (FK)  │
-│ name                  │   │ exercise_set_id (FK)  │
-│ muscle_group          │   └───┬───────────────────┘
-└───────────────────────┘       │
-                                │ (FK)
-                                │
-                        ┌───────▼────────────┐
-                        │ exercise_set_entity│
-                        │────────────────────│
-                        │ exercise_set_id(PK)│
-                        │ weight             │
-                        │ reps               │
-                        └────────────────────┘
+┌──────────────────┐
+│  muscle_groups   │
+│──────────────────│
+│ id (PK)          │───┐
+│ name (UNIQUE)    │   │
+│ description      │   │
+└──────────────────┘   │
+                       │
+                       │ (FK)
+                       │
+┌──────────────┐   ┌───▼──────────┐
+│    users     │   │  exercises   │
+│──────────────│   │──────────────│
+│ id (PK)      │───┤ id (PK)      │
+│ username     │   │ name         │
+│ email        │   │ muscle_grp_id│
+│ password     │   └───┬──────────┘
+│ role         │       │
+│ created_at   │       │
+└──────────────┘       │
+       │               │
+       │ (FK)          │ (FK)
+       │               │
+   ┌───▼───────────────▼───┐
+   │   exercise_logs       │
+   │───────────────────────│
+   │ exercise_log_id (PK)  │───┐
+   │ user_id (FK)          │   │
+   │ exercise_id (FK)      │   │
+   │ date                  │   │
+   │ has_failed            │   │
+   └───────────────────────┘   │
+                               │
+                               │ (FK - M2M)
+                               │
+                   ┌───────────▼───────────┐
+                   │ exercise_log_sets     │
+                   │───────────────────────│
+                   │ exercise_log_id (FK)  │
+                   │ exercise_set_id (FK)  │
+                   └───┬───────────────────┘
+                       │
+                       │ (FK)
+                       │
+               ┌───────▼──────────┐
+               │  exercise_sets   │
+               │──────────────────│
+               │ exercise_set_id  │
+               │ weight           │
+               │ reps             │
+               └──────────────────┘
 ```
 
 ## Troubleshooting
@@ -283,7 +306,8 @@ SELECT 'logs', COUNT(*) FROM exercise_log_entity;
 ```
 
 Expected output:
-- 5 tables created
+- 6 tables created
+- 6 muscle groups (if seed data loaded)
 - 34 exercises (if seed data loaded)
 - 0 users, 0 logs (initial state)
 

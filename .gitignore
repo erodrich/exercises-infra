@@ -7,9 +7,12 @@
 *.log
 
 # Backups
-*.sql
 *.dump
 *.backup
+
+# SQL files (but allow schema files in database/)
+*.sql
+!database/*.sql
 
 # Temporary files
 *.tmp

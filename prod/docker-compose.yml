@@ -35,6 +35,9 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/exercises_prod
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD}  # Required in production
+      # JWT Configuration (REQUIRED - use strong secret in production)
+      JWT_SECRET: ${JWT_SECRET}  # REQUIRED: Strong secret key (256+ bits)
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}  # 24 hours in milliseconds
     ports:
       - "8080:8080"
     depends_on:

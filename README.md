@@ -26,6 +26,21 @@ exercises-infra/
 - Docker Compose 2.0+
 - Access to Docker Hub (where the images are hosted)
 
+## Features
+
+### Security
+- **JWT Authentication** - Token-based authentication for API access
+- **Role-Based Access Control** - USER and ADMIN roles
+- **Password Encryption** - BCrypt hashing for secure password storage
+- **Secure Configuration** - Environment-based secrets management
+
+### Application
+- **User Management** - Registration, login with JWT tokens
+- **Exercise Administration** - Admin-only CRUD operations for exercises
+- **Workout Logging** - Users can log exercises with sets (weight/reps)
+- **Pre-populated Data** - 34 common exercises across 6 muscle groups
+- **Health Monitoring** - Built-in health checks for all services
+
 ## Database Initialization
 
 ### Automatic (Recommended)
@@ -84,6 +99,9 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
    IMAGE_VERSION=latest
    FRONTEND_VERSION=latest
    DB_PASSWORD=postgres
+   # JWT secret (optional for dev, uses default if not set)
+   JWT_SECRET=exercises-dev-secret-key-change-in-production-must-be-256-bits
+   JWT_EXPIRATION=86400000  # 24 hours
    ```
 
 4. **Start services** (database auto-initializes on first run)
@@ -131,6 +149,18 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
    FRONTEND_VERSION=1.0.0  # Use specific version tag
    DB_USERNAME=postgres
    DB_PASSWORD=YourSecurePassword123!  # CHANGE THIS!
+   # JWT Configuration (REQUIRED for production)
+   JWT_SECRET=your-strong-256-bit-secret-key-here  # CHANGE THIS!
+   JWT_EXPIRATION=86400000  # 24 hours in milliseconds
+   ```
+
+   **Generate a secure JWT secret:**
+   ```bash
+   # Using OpenSSL (recommended)
+   openssl rand -base64 64
+   
+   # Or using /dev/urandom
+   head -c 64 /dev/urandom | base64
    ```
 
 4. **Start services** (database auto-initializes on first run)
@@ -340,6 +370,8 @@ docker-compose exec postgres pg_isready -U postgres
 | `IMAGE_VERSION` | `latest` | Backend image version |
 | `FRONTEND_VERSION` | `latest` | Frontend image version |
 | `DB_PASSWORD` | `postgres` | Database password |
+| `JWT_SECRET` | (default key) | JWT secret key for token signing |
+| `JWT_EXPIRATION` | `86400000` | JWT token expiration in milliseconds (24h) |
 
 ### Production
 
@@ -350,6 +382,8 @@ docker-compose exec postgres pg_isready -U postgres
 | `FRONTEND_VERSION` | `latest` | Frontend image version (use specific tag) |
 | `DB_USERNAME` | `postgres` | Database username |
 | `DB_PASSWORD` | - | Database password (required, no default) |
+| `JWT_SECRET` | - | JWT secret key (required, 256+ bits) |
+| `JWT_EXPIRATION` | `86400000` | JWT token expiration in milliseconds (24h) |
 
 ## Volumes
 
@@ -508,14 +542,17 @@ docker-compose up -d
 ### Production
 
 - ⚠️ **MUST** use strong passwords (20+ characters, mixed case, numbers, symbols)
+- ⚠️ **MUST** generate secure JWT secret (256+ bits using OpenSSL)
 - ⚠️ **MUST** use specific version tags (not `latest`)
 - ⚠️ **NEVER** commit `.env` files to version control
+- ⚠️ **NEVER** use default JWT secret in production
 - ✅ Consider using Docker secrets instead of environment variables
 - ✅ Set up firewall rules to restrict database access
 - ✅ Enable SSL/TLS for database connections
 - ✅ Regular security updates for base images
 - ✅ Monitor logs for suspicious activity
 - ✅ Set up automated backups
+- ✅ Rotate JWT secrets periodically
 
 ## Monitoring
 
@@ -541,19 +578,31 @@ docker system df -v
 
 ## Production Deployment Checklist
 
+### Pre-Deployment
 - [ ] Copy `.env.example` to `.env`
 - [ ] Set `DOCKER_USERNAME` to your Docker Hub username
 - [ ] Set `IMAGE_VERSION` to specific version (e.g., `1.0.0`)
 - [ ] Set `FRONTEND_VERSION` to specific version (e.g., `1.0.0`)
 - [ ] Set strong `DB_PASSWORD` (20+ characters)
-- [ ] Review security settings
+- [ ] Generate secure `JWT_SECRET` using `openssl rand -base64 64`
+- [ ] Set `JWT_EXPIRATION` (default 24h is reasonable)
+- [ ] Review all security settings
+- [ ] Verify `.env` is in `.gitignore`
+
+### Deployment
 - [ ] Test database connection
 - [ ] Verify health checks pass
+- [ ] Test user registration and login
+- [ ] Verify JWT tokens are being issued
+- [ ] Test admin role access
+
+### Post-Deployment
 - [ ] Set up monitoring
 - [ ] Configure automated backups
 - [ ] Document rollback procedure
 - [ ] Set up log aggregation
 - [ ] Configure alerts
+- [ ] Document JWT secret rotation procedure
 
 ## Maintenance
 
