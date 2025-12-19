@@ -56,7 +56,7 @@ services:
     image: ${DOCKER_USERNAME:-yourusername}/exercises-frontend:${FRONTEND_VERSION:-latest}
     container_name: exercises-frontend-dev
     environment:
-      VITE_API_URL: http://localhost:8080/exercise-logging
+      VITE_API_URL: http://backend:8080/exercise-logging
     ports:
       - "3000:80"
     depends_on:
