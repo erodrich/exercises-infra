@@ -127,6 +127,8 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 
 ### Production Environment
 
+**Note:** The application uses Nginx reverse proxy, so it works on ANY server without IP/domain configuration!
+
 1. **Navigate to prod folder**
    ```bash
    cd prod
@@ -162,6 +164,8 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
    # Or using /dev/urandom
    head -c 64 /dev/urandom | base64
    ```
+
+
 
 4. **Start services** (database auto-initializes on first run)
    ```bash
@@ -495,6 +499,24 @@ docker-compose exec frontend wget -qO- http://localhost/health
 docker-compose logs --tail=100 backend
 docker-compose logs --tail=100 frontend
 ```
+
+### CORS Errors (Fixed!)
+
+**Good news:** The application now uses Nginx reverse proxy, so CORS is no longer an issue!
+
+**How it works:**
+- Browser requests: `http://YOUR_SERVER_IP:3000/exercise-logging/api/...`
+- Nginx proxies to backend via internal Docker network
+- No CORS issues because everything appears to be same-origin
+
+**If you're using an older version:**
+```bash
+# Pull latest frontend image (has Nginx proxy configured)
+docker-compose pull frontend
+docker-compose up -d frontend
+```
+
+📖 **See [NGINX_PROXY_SOLUTION.md](NGINX_PROXY_SOLUTION.md) for technical details**
 
 ### Reset Everything
 

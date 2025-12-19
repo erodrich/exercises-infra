@@ -38,6 +38,8 @@ services:
       # JWT Configuration (REQUIRED - use strong secret in production)
       JWT_SECRET: ${JWT_SECRET}  # REQUIRED: Strong secret key (256+ bits)
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}  # 24 hours in milliseconds
+      # CORS - Allow requests from Nginx proxy (same server)
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://frontend}
     ports:
       - "8080:8080"
     depends_on:
@@ -63,8 +65,8 @@ services:
   frontend:
     image: ${DOCKER_USERNAME}/exercises-frontend:${FRONTEND_VERSION:-latest}
     container_name: exercises-frontend-prod
-    environment:
-      VITE_API_URL: http://localhost:8080/exercise-logging
+    # No environment configuration needed!
+    # Nginx proxies API requests to backend via Docker network
     ports:
       - "3000:80"
     depends_on:
