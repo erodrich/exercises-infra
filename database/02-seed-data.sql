@@ -7,58 +7,111 @@
 -- For production, consider whether you want to pre-load data or allow users to create their own
 
 -- First, insert muscle groups
-INSERT INTO muscle_groups (id, name, description) VALUES (1, 'Chest', 'Pectoral muscles');
-INSERT INTO muscle_groups (id, name, description) VALUES (2, 'Back', 'Latissimus dorsi, trapezius, rhomboids');
-INSERT INTO muscle_groups (id, name, description) VALUES (3, 'Shoulders', 'Deltoid muscles');
-INSERT INTO muscle_groups (id, name, description) VALUES (4, 'Legs', 'Quadriceps, hamstrings, glutes, calves');
-INSERT INTO muscle_groups (id, name, description) VALUES (5, 'Biceps', 'Biceps brachii');
-INSERT INTO muscle_groups (id, name, description) VALUES (6, 'Triceps', 'Triceps brachii');
+INSERT INTO muscle_groups (id, name, description)
+VALUES (1, 'Chest', 'Chest exercises for pectoral muscles');
+INSERT INTO muscle_groups (id, name, description)
+VALUES (2, 'Shoulders', 'Shoulder exercises for deltoid muscles');
+INSERT INTO muscle_groups (id, name, description)
+VALUES (3, 'Triceps', 'Tricep exercises for triceps brachii');
+INSERT INTO muscle_groups (id, name, description)
+VALUES (4, 'Back', 'Back exercises for latissimus dorsi and other back muscles');
+INSERT INTO muscle_groups (id, name, description)
+VALUES (5, 'Biceps', 'Bicep exercises for biceps brachii');
+INSERT INTO muscle_groups (id, name, description)
+VALUES (6, 'Legs', 'Leg exercises for quadriceps, hamstrings, and calves');
 
--- Chest Exercises (muscle_group_id = 1)
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (1, 'Bench Press', 1);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (2, 'Incline Dumbbell Press', 1);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (3, 'Dumbbell Flat Press', 1);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (4, 'Cable Fly', 1);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (5, 'Push Ups', 1);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (6, 'Decline Press', 1);
-
--- Back Exercises (muscle_group_id = 2)
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (7, 'Pull Ups', 2);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (8, 'Bent Over Row', 2);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (9, 'Deadlift', 2);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (10, 'Lat Pulldown', 2);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (11, 'Seated Cable Row', 2);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (12, 'T-Bar Row', 2);
-
--- Shoulder Exercises (muscle_group_id = 3)
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (13, 'Overhead Press', 3);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (14, 'Lateral Raise', 3);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (15, 'Front Raise', 3);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (16, 'Rear Delt Fly', 3);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (17, 'Arnold Press', 3);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (18, 'Face Pulls', 3);
-
--- Leg Exercises (muscle_group_id = 4)
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (19, 'Squat', 4);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (20, 'Leg Press', 4);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (21, 'Leg Curl', 4);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (22, 'Leg Extension', 4);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (23, 'Calf Raise', 4);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (24, 'Lunges', 4);
-
--- Bicep Exercises (muscle_group_id = 5)
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (25, 'Barbell Curl', 5);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (26, 'Dumbbell Curl', 5);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (27, 'Hammer Curl', 5);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (28, 'Preacher Curl', 5);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (29, 'Cable Curl', 5);
-
--- Tricep Exercises (muscle_group_id = 6)
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (30, 'Tricep Pushdown', 6);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (31, 'Overhead Tricep Extension', 6);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (32, 'Dips', 6);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (33, 'Close Grip Bench Press', 6);
-INSERT INTO exercises (id, name, muscle_group_id) VALUES (34, 'Skull Crushers', 6);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (1, 'Incline Dumbbell Press', 1);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (2, 'Dumbbell Flat Press', 1);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (3, 'Seated Overhead Press', 2);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (4, 'Dumbbell Lateral Raises', 2);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (5, 'Rope Pushdowns', 3);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (6, 'Overhead Dumbbell Triceps Extension', 3);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (7, 'Deadlift', 4);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (8, 'Barbell Rows', 4);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (9, 'Lat Pulldown', 4);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (10, 'Face Pulls', 2);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (11, 'Incline Dumbbell Curls', 5);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (12, 'Hammer Curls', 5);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (13, 'Squat on Smith (Machine)', 6);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (14, 'Leg Press', 6);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (15, 'Walking Lunges', 6);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (16, 'Incline Barbell Press', 1);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (17, 'Pec Deck Flies', 1);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (18, 'Seated Overhead Press (Machine)', 2);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (19, 'Cable Lateral Raises', 2);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (20, 'Dips', 3);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (21, 'Skull Crushers', 3);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (22, 'Seated Chest Press', 1);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (23, 'Dumbbell Rows', 4);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (24, 'Hack Squat (Machine)', 6);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (25, 'Leg Curl', 6);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (26, 'Arnold Press', 2);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (27, 'Dumbbell Skull Crushers', 3);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (28, 'Rack Pulls', 4);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (29, 'Chest-Supported Rows', 4);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (30, 'Chin-ups', 4);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (31, 'Cable Rear Delt Flies', 2);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (32, 'Concentration Curls', 5);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (33, 'Cable Rope Curls', 5);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (34, 'Barbell Bench Press', 1);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (35, 'Standing Calf Raises', 6);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (36, 'Cable Flies', 1);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (37, 'Dips (Machine)', 3);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (38, 'Cable Chin-Ups', 4);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (39, 'Dumbbell Rear Delt Flies', 2);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (40, 'Incline Dumbbell Flies', 1);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (41, 'Cable Triceps Pushdowns', 3);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (42, 'Overhead Rope Triceps Extension', 3);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (43, 'Lat Pulldown (Machine)', 4);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (44, 'Spider Hammer Curls', 5);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (45, 'Cable Incline Curl', 5);
+INSERT INTO exercises (id, name, muscle_group_id)
+VALUES (46, 'Dumbbell Flat Flies', 1);
 
 -- Update the sequences to continue from the last inserted ID
 SELECT setval('muscle_groups_seq', 10);
