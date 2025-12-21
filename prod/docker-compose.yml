@@ -61,14 +61,15 @@ services:
         reservations:
           memory: 512M
 
-  # Exercise Frontend Application - Production
+  # Exercise Frontend Application - Production (Internal only)
   frontend:
     image: ${DOCKER_USERNAME}/exercises-frontend:${FRONTEND_VERSION:-latest}
     container_name: exercises-frontend-prod
     # No environment configuration needed!
     # Nginx proxies API requests to backend via Docker network
-    ports:
-      - "3000:80"
+    # No external ports - only accessible via nginx-le proxy
+    expose:
+      - "80"
     depends_on:
       backend:
         condition: service_healthy
@@ -88,9 +89,45 @@ services:
         reservations:
           memory: 128M
 
+  # HTTPS Reverse Proxy with Let's Encrypt - Production
+  nginx-le:
+    image: umputun/nginx-le:latest
+    container_name: exercises-nginx-le-prod
+    hostname: nginx-le
+    environment:
+      - TZ=${TZ:-UTC}
+      - LETSENCRYPT=${LETSENCRYPT:-true}
+      - LE_EMAIL=${LE_EMAIL}
+      - LE_FQDN=${LE_FQDN}
+    ports:
+      - "80:80"    # HTTP (redirects to HTTPS)
+      - "443:443"  # HTTPS
+    volumes:
+      - ./nginx-le.conf:/etc/nginx/conf.d-le/service.conf:ro
+      - nginx_ssl:/etc/nginx/ssl
+    depends_on:
+      frontend:
+        condition: service_healthy
+    networks:
+      - exercises-network
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
 networks:
   exercises-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  nginx_ssl:

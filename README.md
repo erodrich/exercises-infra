@@ -29,6 +29,7 @@ exercises-infra/
 ## Features
 
 ### Security
+- **HTTPS/SSL** - Automatic Let's Encrypt certificates in production (nginx-le)
 - **JWT Authentication** - Token-based authentication for API access
 - **Role-Based Access Control** - USER and ADMIN roles
 - **Password Encryption** - BCrypt hashing for secure password storage
@@ -119,15 +120,15 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
    ```
 
 6. **Access application**
-   - Frontend: http://localhost:3000
+   - Frontend: http://localhost (HTTP-only for development)
    - API: http://localhost:8080/exercise-logging
    - Swagger: http://localhost:8080/exercise-logging/swagger-ui/index.html
    - Backend Health: http://localhost:8080/exercise-logging/actuator/health
-   - Frontend Health: http://localhost:3000/health
+   - Proxy Health: http://localhost/proxy-health
 
 ### Production Environment
 
-**Note:** The application uses Nginx reverse proxy, so it works on ANY server without IP/domain configuration!
+**Note:** Production uses HTTPS with automatic Let's Encrypt SSL certificates!
 
 1. **Navigate to prod folder**
    ```bash
@@ -151,9 +152,16 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
    FRONTEND_VERSION=1.0.0  # Use specific version tag
    DB_USERNAME=postgres
    DB_PASSWORD=YourSecurePassword123!  # CHANGE THIS!
+   
    # JWT Configuration (REQUIRED for production)
    JWT_SECRET=your-strong-256-bit-secret-key-here  # CHANGE THIS!
    JWT_EXPIRATION=86400000  # 24 hours in milliseconds
+   
+   # HTTPS/SSL Configuration (REQUIRED for production)
+   LETSENCRYPT=true
+   LE_EMAIL=your-email@example.com     # REQUIRED for Let's Encrypt
+   LE_FQDN=erodrich.duckdns.org        # Your domain (DuckDNS works!)
+   TZ=UTC
    ```
 
    **Generate a secure JWT secret:**
@@ -165,9 +173,13 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
    head -c 64 /dev/urandom | base64
    ```
 
+   **DNS Configuration (REQUIRED for HTTPS):**
+   - Ensure your `LE_FQDN` domain points to your server's public IP
+   - For DuckDNS: Configure at https://www.duckdns.org
+   - Ports 80 and 443 **MUST** be open on your firewall
+   - Let's Encrypt will automatically verify domain ownership
 
-
-4. **Start services** (database auto-initializes on first run)
+4. **Start services** (SSL certificate generated on first run)
    ```bash
    docker-compose up -d
    ```
@@ -177,11 +189,21 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 5. **Verify deployment**
    ```bash
    docker-compose ps
+   
+   # Watch SSL certificate generation (important on first run!)
+   docker-compose logs -f nginx-le
+   
+   # Check other services
    docker-compose logs -f backend
    docker-compose logs -f frontend
-   curl http://localhost:8080/exercise-logging/actuator/health
-   curl http://localhost:3000/health
+   
+   # Test HTTPS access (after certificate is generated)
+   curl https://erodrich.duckdns.org/health
+   curl https://erodrich.duckdns.org/exercise-logging/actuator/health
    ```
+   
+   **Note:** First startup takes 30-60 seconds for Let's Encrypt certificate generation.
+   Look for "Certificate successfully obtained" in nginx-le logs.
 
 ## Environment Configurations
 
@@ -192,7 +214,7 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 **Configuration:**
 - PostgreSQL on port 5432
 - Backend on port 8080
-- Frontend on port 3000
+- HTTP Proxy on port 80 (no SSL for development)
 - Profile: `dev`
 - Database: `exercises_dev`
 - Auto-initializes with sample data
@@ -202,7 +224,8 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 **Docker Compose Services:**
 - `postgres` - PostgreSQL 16 Alpine
 - `backend` - Spring Boot API (from Docker Hub)
-- `frontend` - React SPA with Nginx (from Docker Hub)
+- `frontend` - React SPA with Nginx (internal only)
+- `proxy` - Nginx HTTP reverse proxy (no SSL)
 
 **Default Credentials:**
 - DB User: `postgres`
@@ -214,24 +237,31 @@ psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
 
 **Configuration:**
 - PostgreSQL on port 5432
-- Backend on port 8080
-- Frontend on port 3000
+- Backend on port 8080 (internal)
+- nginx-le on ports 80 (HTTP → HTTPS redirect) and 443 (HTTPS)
 - Profile: `prod`
 - Database: `exercises_prod`
-- No auto-initialization
+- Automatic Let's Encrypt SSL certificates
+- Certificate auto-renewal every 60 days
 - Schema validation only
 - Production logging
 - Memory limits:
   - Backend: 1GB max, 512MB reserved
   - Frontend: 256MB max, 128MB reserved
+  - nginx-le: 128MB max, 64MB reserved
 
 **Docker Compose Services:**
 - `postgres` - PostgreSQL 16 Alpine (always restart)
-- `backend` - Spring Boot API (from Docker Hub)
-- `frontend` - React SPA with Nginx (from Docker Hub)
+- `backend` - Spring Boot API (internal only)
+- `frontend` - React SPA with Nginx (internal only)
+- `nginx-le` - HTTPS reverse proxy with Let's Encrypt
 
 **Security Requirements:**
 - ⚠️ **MUST** set secure DB_PASSWORD
+- ⚠️ **MUST** set valid LE_EMAIL for Let's Encrypt notifications
+- ⚠️ **MUST** set LE_FQDN pointing to server IP
+- ⚠️ **MUST** open ports 80 and 443 on firewall
+- ⚠️ **MUST** generate secure JWT_SECRET
 - Should use specific image version tags (not `latest`)
 - Environment variables for all secrets
 
@@ -388,12 +418,21 @@ docker-compose exec postgres pg_isready -U postgres
 | `DB_PASSWORD` | - | Database password (required, no default) |
 | `JWT_SECRET` | - | JWT secret key (required, 256+ bits) |
 | `JWT_EXPIRATION` | `86400000` | JWT token expiration in milliseconds (24h) |
+| `LETSENCRYPT` | `true` | Enable Let's Encrypt SSL certificates |
+| `LE_EMAIL` | - | Email for Let's Encrypt notifications (required) |
+| `LE_FQDN` | - | Domain name for SSL certificate (required) |
+| `TZ` | `UTC` | Timezone for containers |
 
 ## Volumes
 
 Both environments use named Docker volumes for data persistence:
 
+**Development:**
 - `postgres_data` - PostgreSQL data directory
+
+**Production:**
+- `postgres_data` - PostgreSQL data directory
+- `nginx_ssl` - Let's Encrypt SSL certificates and keys
 
 **List volumes:**
 ```bash
@@ -535,21 +574,116 @@ docker-compose down --rmi all -v
 docker-compose up -d
 ```
 
+## HTTPS/SSL Setup (Production)
+
+### Overview
+
+Production uses **nginx-le** for automatic HTTPS with Let's Encrypt:
+
+**Flow:**
+```
+Internet → Port 443 (HTTPS) → nginx-le → frontend:80 → backend:8080
+          Port 80 (HTTP redirect)
+```
+
+### Prerequisites
+
+1. **Domain Name**: DuckDNS subdomain works perfectly (`erodrich.duckdns.org`)
+2. **DNS Configuration**: Domain must point to server's public IP
+3. **Firewall**: Ports 80 and 443 must be open
+4. **Email**: Valid email for Let's Encrypt notifications
+
+### Required Environment Variables
+
+```env
+LETSENCRYPT=true
+LE_EMAIL=your-email@example.com
+LE_FQDN=erodrich.duckdns.org
+TZ=UTC
+```
+
+### First Startup Process
+
+1. nginx-le container starts
+2. Requests SSL certificate from Let's Encrypt
+3. Let's Encrypt verifies domain ownership (port 80)
+4. Certificate issued and installed (~30-60 seconds)
+5. HTTPS available on port 443
+6. HTTP automatically redirects to HTTPS
+
+**Watch the process:**
+```bash
+docker-compose logs -f nginx-le
+```
+
+Look for: `"Certificate successfully obtained"`
+
+### Certificate Renewal
+
+- **Automatic**: Certificates renew every 60 days
+- **No intervention needed**: nginx-le handles it automatically
+- **Monitoring**: Check logs periodically
+
+### Access Your Application
+
+- **HTTPS**: https://erodrich.duckdns.org
+- **HTTP**: http://erodrich.duckdns.org (redirects to HTTPS)
+- **API**: https://erodrich.duckdns.org/exercise-logging/api/v1/...
+
+### SSL Configuration
+
+The nginx-le configuration (`nginx-le.conf`) includes:
+- ✅ A+ SSL rating configuration
+- ✅ HTTP/2 support
+- ✅ HSTS headers
+- ✅ Security headers (X-Frame-Options, etc.)
+- ✅ Automatic HTTP → HTTPS redirect
+
+### Troubleshooting HTTPS
+
+**Certificate not generating:**
+```bash
+# Check nginx-le logs
+docker-compose logs nginx-le
+
+# Common issues:
+# - Domain doesn't point to server IP
+# - Ports 80/443 not open on firewall
+# - Invalid email address
+# - Rate limit hit (5 failures per hour per domain)
+```
+
+**Verify SSL:**
+```bash
+# Test certificate
+openssl s_client -connect erodrich.duckdns.org:443 -servername erodrich.duckdns.org
+
+# Check certificate expiry
+echo | openssl s_client -connect erodrich.duckdns.org:443 2>/dev/null | openssl x509 -noout -dates
+```
+
+**Rate Limits:**
+- Let's Encrypt: 5 failed attempts per hour
+- If hit, wait 1 hour before retrying
+- Use staging for testing: `LE_ADDITIONAL_OPTIONS=--staging`
+
 ## Ports Reference
 
 ### Development Environment
 
 | Service | Container Port | Host Port | Purpose |
-|---------|----------------|-----------|---------|
-| frontend | 80 | 3000 | React SPA (Nginx) |
+|---------|----------------|-----------|---------|  
+| proxy | 80 | 80 | HTTP reverse proxy (no SSL) |
+| frontend | 80 | - | React SPA (internal only) |
 | backend | 8080 | 8080 | Spring Boot REST API |
 | postgres | 5432 | 5432 | PostgreSQL database |
 
 ### Production Environment
 
 | Service | Container Port | Host Port | Purpose |
-|---------|----------------|-----------|---------|
-| frontend | 80 | 3000 | React SPA (Nginx) |
+|---------|----------------|-----------|---------|  
+| nginx-le | 80, 443 | 80, 443 | HTTPS proxy + Let's Encrypt |
+| frontend | 80 | - | React SPA (internal only) |
 | backend | 8080 | 8080 | Spring Boot REST API |
 | postgres | 5432 | 5432 | PostgreSQL database |
 
@@ -608,23 +742,36 @@ docker system df -v
 - [ ] Set strong `DB_PASSWORD` (20+ characters)
 - [ ] Generate secure `JWT_SECRET` using `openssl rand -base64 64`
 - [ ] Set `JWT_EXPIRATION` (default 24h is reasonable)
+- [ ] Set `LETSENCRYPT=true`
+- [ ] Set valid `LE_EMAIL` for SSL notifications
+- [ ] Set `LE_FQDN` to your domain (e.g., `erodrich.duckdns.org`)
+- [ ] Verify domain points to server's public IP
+- [ ] Open ports 80 and 443 on firewall
 - [ ] Review all security settings
 - [ ] Verify `.env` is in `.gitignore`
 
 ### Deployment
+- [ ] Start services: `docker-compose up -d`
+- [ ] Watch SSL certificate generation: `docker-compose logs -f nginx-le`
+- [ ] Wait for "Certificate successfully obtained" message
+- [ ] Test HTTPS access: `curl https://your-domain.com/health`
+- [ ] Verify HTTP redirects to HTTPS
 - [ ] Test database connection
-- [ ] Verify health checks pass
-- [ ] Test user registration and login
+- [ ] Verify all health checks pass
+- [ ] Test user registration and login via HTTPS
 - [ ] Verify JWT tokens are being issued
 - [ ] Test admin role access
+- [ ] Verify backend API accessible via HTTPS
 
 ### Post-Deployment
-- [ ] Set up monitoring
-- [ ] Configure automated backups
+- [ ] Test SSL certificate with ssllabs.com
+- [ ] Set up monitoring for certificate expiry
+- [ ] Configure automated database backups
 - [ ] Document rollback procedure
 - [ ] Set up log aggregation
-- [ ] Configure alerts
+- [ ] Configure alerts for service health
 - [ ] Document JWT secret rotation procedure
+- [ ] Schedule certificate renewal monitoring
 
 ## Maintenance
 

@@ -52,12 +52,13 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-  # Exercise Frontend Application - Development
+  # Exercise Frontend Application - Development (Internal only)
   frontend:
     image: ${DOCKER_USERNAME:-yourusername}/exercises-frontend:${FRONTEND_VERSION:-latest}
     container_name: exercises-frontend-dev
-    ports:
-      - "3000:80"
+    # No external ports - only accessible via proxy
+    expose:
+      - "80"
     depends_on:
       backend:
         condition: service_healthy
@@ -69,6 +70,27 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
+    restart: unless-stopped
+
+  # HTTP Reverse Proxy - Development (No SSL)
+  proxy:
+    image: nginx:alpine
+    container_name: exercises-proxy-dev
+    ports:
+      - "80:80"    # HTTP only for development
+    volumes:
+      - ./nginx-dev-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+    networks:
+      - exercises-network
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/proxy-health" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
 networks:
