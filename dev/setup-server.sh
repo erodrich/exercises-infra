@@ -5,7 +5,7 @@
 set -e
 
 echo "=========================================="
-echo "Exercise App - Server Deployment Setup"
+echo "Exercise App - Development Setup"
 echo "=========================================="
 echo ""
 
@@ -129,7 +129,7 @@ echo "Creating .env file..."
 # Create .env file
 cat > .env << EOF
 # ============================================
-# PRODUCTION CONFIGURATION
+# DEVELOPMENT CONFIGURATION
 # Generated: $(date)
 # ============================================
 
@@ -153,9 +153,10 @@ CORS_ALLOWED_ORIGINS=$CORS_ORIGINS
 
 # ============================================
 # Notes:
-# - Frontend accessible at: http://$SERVER_IP:3000
+# - Frontend accessible at: http://$SERVER_IP (port 80)
 # - Backend API at: http://$SERVER_IP:8080/exercise-logging
-# - Make sure firewall allows ports 3000 and 8080
+# - Make sure firewall allows ports 80 and 8080
+# - HTTPS is disabled (development environment)
 # ============================================
 EOF
 
@@ -169,8 +170,8 @@ echo ""
 echo "1. Review the .env file:"
 echo "   nano .env"
 echo ""
-echo "2. Ensure firewall allows ports 3000 and 8080:"
-echo "   sudo ufw allow 3000"
+echo "2. Ensure firewall allows ports 80 and 8080:"
+echo "   sudo ufw allow 80"
 echo "   sudo ufw allow 8080"
 echo ""
 echo "3. Start the services:"
@@ -180,6 +181,8 @@ echo "4. Check the logs:"
 echo "   docker-compose logs -f"
 echo ""
 echo "5. Access the application:"
-echo "   http://$SERVER_IP:3000"
+echo "   http://$SERVER_IP"
+echo ""
+echo -e "${YELLOW}Note: Development uses HTTP-only (no HTTPS).${NC}"
 echo ""
 echo -e "${GREEN}Setup complete!${NC}"
