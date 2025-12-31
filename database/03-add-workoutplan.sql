@@ -13,58 +13,56 @@ DROP SEQUENCE IF EXISTS workout_plans_seq;
 DROP SEQUENCE IF EXISTS workout_days_seq;
 DROP SEQUENCE IF EXISTS exercise_target_seq;
 
--- Create sequences for primary keys (GenerationType.AUTO compatibility)
 CREATE SEQUENCE workout_plans_seq START WITH 1 INCREMENT BY 50;
 CREATE SEQUENCE workout_days_seq START WITH 1 INCREMENT BY 50;
 CREATE SEQUENCE exercise_target_seq START WITH 1 INCREMENT BY 50;
 
--- Workout plans table
+
 CREATE TABLE workout_plans (
-    id BIGINT NOT NULL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    duration INTEGER NOT NULL,
-    duration_unit VARCHAR(20) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT false,
-    user_id BIGINT NOT NULL,
-    CONSTRAINT fk_workout_plans_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT chk_duration_unit CHECK (duration_unit IN ('WEEKS', 'MONTHS')),
-    CONSTRAINT chk_duration_positive CHECK (duration > 0)
+    id            int8 NOT NULL,
+    "name"        varchar(255) NULL,
+    duration      int4 NULL,
+    duration_unit int2 NULL,
+    is_active     bool NOT NULL,
+    user_id       int8 NULL,
+    CONSTRAINT workout_plans_duration_unit_check CHECK (((duration_unit >= 0) AND (duration_unit <= 1))),
+    CONSTRAINT workout_plans_pkey PRIMARY KEY (id)
 );
+-- workout_plans foreign keys
+ALTER TABLE workout_plans ADD CONSTRAINT fk_workout_plans_user FOREIGN KEY (user_id) REFERENCES users (id);
 
--- Workout days table
 CREATE TABLE workout_days (
-    id BIGINT NOT NULL PRIMARY KEY,
-    description VARCHAR(500) NOT NULL,
-    workout_plan_id BIGINT NOT NULL,
-    CONSTRAINT fk_workout_days_plan FOREIGN KEY (workout_plan_id) REFERENCES workout_plans(id) ON DELETE CASCADE
+    id              int8 NOT NULL,
+    description     varchar(255) NULL,
+    workout_plan_id int8 NULL,
+    CONSTRAINT workout_days_pkey PRIMARY KEY (id)
 );
+-- workout_days foreign keys
+ALTER TABLE workout_days ADD CONSTRAINT fk_workout_days_plan FOREIGN KEY (workout_plan_id) REFERENCES workout_plans (id);
 
--- Exercise target table
 CREATE TABLE exercise_target (
-    id BIGINT NOT NULL PRIMARY KEY,
-    exercise_id BIGINT NOT NULL,
-    sets INTEGER NOT NULL,
-    min_reps INTEGER NOT NULL,
-    max_reps INTEGER NOT NULL,
-    workout_day_id BIGINT NOT NULL,
-    CONSTRAINT fk_exercise_target_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
-    CONSTRAINT fk_exercise_target_day FOREIGN KEY (workout_day_id) REFERENCES workout_days(id) ON DELETE CASCADE,
-    CONSTRAINT chk_sets_positive CHECK (sets > 0),
-    CONSTRAINT chk_reps_positive CHECK (min_reps > 0 AND max_reps > 0),
-    CONSTRAINT chk_reps_range CHECK (max_reps >= min_reps)
+    id             int8 NOT NULL,
+    max_reps       int4 NULL,
+    min_reps       int4 NULL,
+    "sets"         int4 NULL,
+    exercise_id    int8 NULL,
+    workout_day_id int8 NULL,
+    CONSTRAINT exercise_target_pkey PRIMARY KEY (id)
 );
+-- exercise_target foreign keys
+ALTER TABLE exercise_target ADD CONSTRAINT fk_exercise_target_exercise FOREIGN KEY (exercise_id) REFERENCES exercises (id);
+ALTER TABLE exercise_target ADD CONSTRAINT fk_exercise_target_day FOREIGN KEY (workout_day_id) REFERENCES workout_days (id);
 
--- Create indexes for workout_plans
-CREATE INDEX idx_workout_plans_user ON workout_plans(user_id);
-CREATE INDEX idx_workout_plans_active ON workout_plans(is_active);
-CREATE INDEX idx_workout_plans_name ON workout_plans(name);
+CREATE INDEX idx_workout_plans_user ON workout_plans (user_id);
+CREATE INDEX idx_workout_plans_active ON workout_plans (is_active);
+CREATE INDEX idx_workout_plans_name ON workout_plans (name);
 
 -- Create indexes for workout_days
-CREATE INDEX idx_workout_days_plan ON workout_days(workout_plan_id);
+CREATE INDEX idx_workout_days_plan ON workout_days (workout_plan_id);
 
 -- Create indexes for exercise_target
-CREATE INDEX idx_exercise_target_day ON exercise_target(workout_day_id);
-CREATE INDEX idx_exercise_target_exercise ON exercise_target(exercise_id);
+CREATE INDEX idx_exercise_target_day ON exercise_target (workout_day_id);
+CREATE INDEX idx_exercise_target_exercise ON exercise_target (exercise_id);
 
 -- Comments for documentation
 COMMENT ON TABLE workout_plans IS 'Workout plans created by users with duration and active status';
