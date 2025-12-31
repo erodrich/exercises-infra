@@ -93,6 +93,22 @@ else
     echo "ℹ️  Skipping seed data"
 fi
 
+# Apply workout plan migration (optional)
+echo ""
+read -p "Add workout plan tables? (Y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    echo "💪 Applying workout plan migration (03-add-workoutplan.sql)..."
+    if [ -f "$SCRIPT_DIR/03-add-workoutplan.sql" ]; then
+        psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/03-add-workoutplan.sql"
+        echo -e "${GREEN}✅ Workout plan tables created successfully${NC}"
+    else
+        echo -e "${YELLOW}⚠️  03-add-workoutplan.sql not found, skipping...${NC}"
+    fi
+else
+    echo "ℹ️  Skipping workout plan migration"
+fi
+
 # Verify tables
 echo ""
 echo "🔍 Verifying database setup..."
@@ -106,10 +122,18 @@ if [ "$TABLE_COUNT" -ge 5 ]; then
     psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "\dt"
     
     # Show exercise count if seed data was loaded
-    EXERCISE_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -tAc "SELECT COUNT(*) FROM exercise_entity;" 2>/dev/null || echo "0")
+    EXERCISE_COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -tAc "SELECT COUNT(*) FROM exercises;" 2>/dev/null || echo "0")
     if [ "$EXERCISE_COUNT" -gt 0 ]; then
         echo ""
         echo "🏋️  Exercises loaded: $EXERCISE_COUNT"
+    fi
+    
+    # Show workout plan table status
+    WORKOUT_PLAN_EXISTS=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'workout_plans';" 2>/dev/null || echo "0")
+    if [ "$WORKOUT_PLAN_EXISTS" -eq 1 ]; then
+        echo "💪 Workout plan feature: enabled"
+    else
+        echo "ℹ️  Workout plan feature: not installed (run migration manually if needed)"
     fi
 else
     echo -e "${RED}❌ Error: Expected at least 5 tables, found $TABLE_COUNT${NC}"

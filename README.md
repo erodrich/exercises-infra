@@ -15,6 +15,7 @@ exercises-infra/
 ├── database/
 │   ├── 01-schema.sql          # Database schema
 │   ├── 02-seed-data.sql       # Initial data (34 exercises)
+│   ├── 03-add-workoutplan.sql # Workout plan tables migration
 │   ├── init-db.sh             # Manual init script
 │   └── README.md              # Database documentation
 └── README.md                  # This file
@@ -39,6 +40,7 @@ exercises-infra/
 - **User Management** - Registration, login with JWT tokens
 - **Exercise Administration** - Admin-only CRUD operations for exercises
 - **Workout Logging** - Users can log exercises with sets (weight/reps)
+- **Workout Plans** - Create custom workout plans with days and exercise targets
 - **Pre-populated Data** - 34 common exercises across 6 muscle groups
 - **Health Monitoring** - Built-in health checks for all services
 
@@ -49,9 +51,10 @@ exercises-infra/
 When starting with docker-compose, the database is **automatically initialized** on first startup:
 
 1. PostgreSQL container starts
-2. SQL scripts from `database/` folder are executed:
+2. SQL scripts from `database/` folder are executed in order:
    - `01-schema.sql` - Creates all tables, indexes, sequences
    - `02-seed-data.sql` - Loads 34 pre-defined exercises
+   - `03-add-workoutplan.sql` - Creates workout plan tables (workout_plans, workout_days, exercise_target)
 3. Application starts with schema validation (`ddl-auto=validate` in prod)
 
 **Important:** Scripts only run when creating a **new database**. If the volume already exists with data, scripts are skipped.
@@ -71,6 +74,7 @@ Or execute SQL files directly:
 export PGPASSWORD=postgres
 psql -h localhost -U postgres -d exercises_dev -f database/01-schema.sql
 psql -h localhost -U postgres -d exercises_dev -f database/02-seed-data.sql
+psql -h localhost -U postgres -d exercises_dev -f database/03-add-workoutplan.sql
 ```
 
 📖 **For detailed database documentation, see [database/README.md](database/README.md)**
