@@ -9,6 +9,7 @@
 # Backups
 *.dump
 *.backup
+*.tar
 
 # SQL files (but allow schema files in database/)
 *.sql

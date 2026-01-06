@@ -13,8 +13,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ../database/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      - ../database/02-seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql
+      - ../database/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:Z
+      - ../database/02-seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql:Z
     networks:
       - exercises-network
     healthcheck:
@@ -22,7 +22,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    #restart: unless-stopped
 
   # Exercise Backend Application - Development
   backend:
